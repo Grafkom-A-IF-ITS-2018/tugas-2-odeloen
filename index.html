@@ -125,7 +125,20 @@
           matrix[i*3+2]+=z
         }
         return matrix
-      }      
+      }
+      
+      function matrixRotating(matrix,deg,xCore,yCore)
+      {
+        degRad = deg * (Math.PI/180)
+        for(var i=0;i<matrix.length/3;i++)
+        {
+          var x = matrix[i*3]-xCore
+          var y = matrix[i*3+2]-yCore
+          matrix[i*3]=Math.cos(degRad)*(x)-Math.sin(degRad)*(y) +xCore
+          matrix[i*3+2]=Math.sin(degRad)*(x)+Math.cos(degRad)*(y) +yCore
+        }
+        return matrix
+      }
 
       var currentCenterMatrix = [0.2,0.2,0.2]
       var translationDirectionMatrix = [1,1,1]
@@ -136,13 +149,14 @@
         -0.4, 1.0,  0.0,
         -0.2, 1.0, 0.0,
       ]
-      function drawA(){
-        var aVertexPositionBuffer
-        var aVertexColorBuffer
-        // A Position
-        aVertexPositionBuffer = gl.createBuffer()
-        gl.bindBuffer(gl.ARRAY_BUFFER, aVertexPositionBuffer)
-        var vertices = [
+
+      var cenX=0.0
+      var cenY=0.0
+      var cenZ=0.0
+
+      var aVertexPositionBuffer
+      var aVertexColorBuffer
+      var vertices = [
           -1.0, -1.0,  0.0,
           -0.8,  -1.0,  0.0,            
           -0.4, 1.0,  0.0,
@@ -192,6 +206,10 @@
           -0.2, 1.0, 0.0,
           */
         ]
+      function drawA(){        
+        // A Position
+        aVertexPositionBuffer = gl.createBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, aVertexPositionBuffer)        
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW)
         aVertexPositionBuffer.itemSize = 3
         aVertexPositionBuffer.numItems = 10
@@ -206,10 +224,10 @@
         aVertexColorBuffer.itemSize = 4
         aVertexColorBuffer.numItems = aVertexPositionBuffer.numItems
 
-        mat4.translate(mvMatrix, mvMatrix, currentCenterMatrix)
+        //mat4.translate(mvMatrix, mvMatrix, currentCenterMatrix)
         mvPushMatrix()
         
-        mat4.rotate(mvMatrix, mvMatrix, glMatrix.toRadian(rTri), [0.0, rotateDirection, 0.0])
+        //mat4.rotate(mvMatrix, mvMatrix, glMatrix.toRadian(rTri), [0.0, rotateDirection, 0.0])
 
         mat4.translate(mvMatrix, mvMatrix, [0.0, 0.0, 0.0])
         gl.bindBuffer(gl.ARRAY_BUFFER, aVertexPositionBuffer)
@@ -312,7 +330,7 @@
         for(var i=0;i<outerVertices.length;i++){
           var segment = i%3;
           var currentDot = outerVertices[i];
-          if (currentCenterMatrix[segment]+currentDot>=2.5||currentCenterMatrix[segment]+currentDot<=-2.5){
+          if (currentDot>=2.5||currentDot<=-2.5){
             translationDirectionMatrix[segment]*=-1
             rotateDirection*=-1
             break
@@ -331,7 +349,16 @@
         lastTime = timeNow
         
         detectCollision();
+
+        cenX+=(translationDirectionMatrix[0]*0.01)
+        cenY+=(translationDirectionMatrix[1]*0.01)
+        cenZ+=(translationDirectionMatrix[2]*0.01)
+
         currentCenterMatrix = matrixTranslate(currentCenterMatrix,translationDirectionMatrix[0]*0.01, translationDirectionMatrix[1]*0.01, translationDirectionMatrix[2]*0.01)
+        vertices = matrixTranslate(vertices,translationDirectionMatrix[0]*0.01, translationDirectionMatrix[1]*0.01, translationDirectionMatrix[2]*0.01)
+        vertices = matrixRotating(vertices,rotateDirection*1.5,cenX,cenZ)
+        outerVertices = matrixTranslate(outerVertices,translationDirectionMatrix[0]*0.01, translationDirectionMatrix[1]*0.01, translationDirectionMatrix[2]*0.01)
+        outerVertices = matrixRotating(outerVertices,rotateDirection*1.5,cenX,cenZ)
       }
 
       function tick() {
