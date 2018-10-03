@@ -112,11 +112,30 @@
         gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix)
       }
 
-      var triangleVertexPositionBuffer
-      var triangleVertexColorBuffer
-      var squareVertexPositionBuffer
-      var squareVertexColorBuffer
+      function matrixRescale(matrix,size){
+        for(var i=0;i<matrix.length;i++)matrix[i]*=size
+        return matrix
+      }
 
+      function matrixTranslate(matrix,x,y,z){
+        for(var i=0;i<matrix.length/3;i++)
+        {
+          matrix[i*3]+=x
+          matrix[i*3+1]+=y
+          matrix[i*3+2]+=z
+        }
+        return matrix
+      }      
+
+      var currentCenterMatrix = [0.2,0.2,0.2]
+      var translationDirectionMatrix = [1,1,1]
+      var rotateDirection = 1.0
+      var outerVertices = [
+        -1.0, -1.0,  0.0,
+        0.45, -1.0, 0.0,
+        -0.4, 1.0,  0.0,
+        -0.2, 1.0, 0.0,
+      ]
       function drawA(){
         var aVertexPositionBuffer
         var aVertexColorBuffer
@@ -187,10 +206,12 @@
         aVertexColorBuffer.itemSize = 4
         aVertexColorBuffer.numItems = aVertexPositionBuffer.numItems
 
-        mat4.translate(mvMatrix, mvMatrix, [0.0, 0.0, -10.0])
+        mat4.translate(mvMatrix, mvMatrix, currentCenterMatrix)
         mvPushMatrix()
-        //mat4.rotate(mvMatrix, mvMatrix, glMatrix.toRadian(rTri), [1.0, 0.0, 0.0])
-        mat4.translate(mvMatrix, mvMatrix, [0.3, 0.0, 0.0])
+        
+        mat4.rotate(mvMatrix, mvMatrix, glMatrix.toRadian(rTri), [0.0, rotateDirection, 0.0])
+
+        mat4.translate(mvMatrix, mvMatrix, [0.0, 0.0, 0.0])
         gl.bindBuffer(gl.ARRAY_BUFFER, aVertexPositionBuffer)
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, aVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0)
         gl.bindBuffer(gl.ARRAY_BUFFER, aVertexColorBuffer)
@@ -209,44 +230,46 @@
         var vertices = [
           
           // Depan
-          2.0, 2.0, 2.0,
-          2.0, -2.0, 2.0,
+          1.0, 1.0, 1.0,
+          1.0, -1.0, 1.0,
 
-          2.0, -2.0, 2.0,
-          -2.0, -2.0, 2.0,
+          1.0, -1.0, 1.0,
+          -1.0, -1.0, 1.0,
 
-          -2.0, -2.0, 2.0,
-          -2.0, 2.0, 2.0,
+          -1.0, -1.0, 1.0,
+          -1.0, 1.0, 1.0,
 
-          -2.0, 2.0, 2.0,
-          2.0, 2.0, 2.0,
+          -1.0, 1.0, 1.0,
+          1.0, 1.0, 1.0,
 
           // Belakang
-          2.0, 2.0, -2.0,
-          2.0, -2.0, -2.0,
+          1.0, 1.0, -1.0,
+          1.0, -1.0, -1.0,
 
-          2.0, -2.0, -2.0,
-          -2.0, -2.0, -2.0,
+          1.0, -1.0, -1.0,
+          -1.0, -1.0, -1.0,
 
-          -2.0, -2.0, -2.0,
-          -2.0, 2.0, -2.0,
+          -1.0, -1.0, -1.0,
+          -1.0, 1.0, -1.0,
 
-          -2.0, 2.0, -2.0,
-          2.0, 2.0, -2.0,
+          -1.0, 1.0, -1.0,
+          1.0, 1.0, -1.0,
 
           // Samping
-          2.0, 2.0, -2.0,
-          2.0, 2.0, 2.0,
+          1.0, 1.0, -1.0,
+          1.0, 1.0, 1.0,
 
-          2.0, -2.0, -2.0,
-          2.0, -2.0, 2.0,
+          1.0, -1.0, -1.0,
+          1.0, -1.0, 1.0,
 
-          -2.0, 2.0, -2.0,
-          -2.0, 2.0, 2.0,
+          -1.0, 1.0, -1.0,
+          -1.0, 1.0, 1.0,
 
-          -2.0, -2.0, 2.0,
-          -2.0, -2.0, -2.0,
+          -1.0, -1.0, 1.0,
+          -1.0, -1.0, -1.0,
         ]
+
+        vertices = matrixRescale(vertices,2.5)
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW)
         cubeVertexPositionBuffer.itemSize = 3
@@ -262,7 +285,7 @@
         cubeVertexColorBuffer.itemSize = 4
         cubeVertexColorBuffer.numItems = cubeVertexPositionBuffer.numItems
 
-        mat4.translate(mvMatrix, mvMatrix, [0.0, 0.0, 0.0])
+        mat4.translate(mvMatrix, mvMatrix, [0.0, 0.0, -10.0])
         mvPushMatrix()        
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer)
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0)
@@ -281,9 +304,20 @@
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
         mat4.perspective(pMatrix, glMatrix.toRadian(45), gl.viewportWidth / gl.viewportHeight, 0.1, 100.0)
         mat4.identity(mvMatrix)
-        
-        drawA()
-        drawCube()          
+        drawCube() 
+        drawA()                
+      }
+
+      function detectCollision(){        
+        for(var i=0;i<outerVertices.length;i++){
+          var segment = i%3;
+          var currentDot = outerVertices[i];
+          if (currentCenterMatrix[segment]+currentDot>=2.5||currentCenterMatrix[segment]+currentDot<=-2.5){
+            translationDirectionMatrix[segment]*=-1
+            rotateDirection*=-1
+            break
+          }                    
+        }                
       }
 
       var lastTime = 0
@@ -295,12 +329,15 @@
           rSquare += (75 * elapsed) / 1000.0
         }
         lastTime = timeNow
+        
+        detectCollision();
+        currentCenterMatrix = matrixTranslate(currentCenterMatrix,translationDirectionMatrix[0]*0.01, translationDirectionMatrix[1]*0.01, translationDirectionMatrix[2]*0.01)
       }
 
       function tick() {
-        requestAnimationFrame(tick)
+        requestAnimationFrame(tick)        
         drawScene()
-        animate()
+        animate()        
       }
 
       function webGLStart() {
@@ -315,6 +352,6 @@
     </script>
   </head>
   <body onload="webGLStart();">
-    <canvas id="mycanvas" style="border: none" width="800" height="600"></canvas>
+    <canvas id="mycanvas" style="border: none" width="1024" height="768"></canvas>
   </body>
 </html>
